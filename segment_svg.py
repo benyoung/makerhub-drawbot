@@ -3,12 +3,42 @@
 from svgpathtools import *
 from math import *
 
-
 L = 60.0                   # distance between motors in inches - made-up number
 inkscape_width = 744.0     # width of default inkscape doc, in whatever the heck coords inkscape uses
 inkscape_height = 1052.0   # height of default inkscape doc. I think I never use this?  Wanna keep scaling 1:1
 
 steps_per_inch = 513.0  / 0.75  # made-up numbers.  bobbin circ is ~0.75 in; steppers are 513 steps/rev.
+
+
+class Drawbot(object):
+    def __init__(self, left_len_inches, right_len_inches):
+        self.left_len  = left_len_inches * steps_per_inch
+        self.right_len = right_len_inches * steps_per_inch
+
+    def step_left(self, num_steps):
+        print "L%d " % num_steps,  # left motor control code goes in here
+        
+
+    def step_right(self, num_steps):
+        print "R%d " % num_steps,
+
+    def move_left(self, new_left_len):    
+        self.step_left(new_left_len - self.left_len)
+        self.left_len = new_left_len
+
+    def move_right(self, new_right_len):
+        self.step_right(new_right_len - self.right_len)
+        self.right_len = new_right_len
+
+    def go_to(self, p): # p is a point, already in "steps" coordinates
+        self.move_left(p[0])
+        self.move_right(p[1])
+
+    def trace_path(self, path):
+        for p in path:
+            self.go_to(p)
+
+drawbot = Drawbot(48.0,48.0) # strings 4 feet long
 
 def svg_coords_to_string_lengths(p):
     x, y = p
@@ -37,37 +67,43 @@ def quantize_point(p, step_size):
     v = round_to_multiple(p[1], step_size)
     return (u,v)
 
+
+def quantized_path_point(path, t, increment_size):
+    z = path.point(t)
+    a_exact = svg_coords_to_string_lengths((z.real, z.imag))
+    return quantize_point(a_exact, increment_size)
+
 def quantize_path(path, increment_size, oversample = 5):
     total_length = path.length() / inkscape_width * L * steps_per_inch # length, in motor steps, of curve
-    num_increments = int(total_length / increment_size / oversample)
+    num_increments = int(total_length / increment_size * oversample)
     t_inc = 1/float(num_increments)
     t = 0
-    quantized_path = []
+    quantized_path = [quantized_path_point(path, 0.0, increment_size)]
+    t += t_inc
     while t < 1:
-        z = path.point(t)
-        a_exact = svg_coords_to_string_lengths((z.real, z.imag))
-        a = quantize_point(a_exact, increment_size)
-        quantized_path.append(a)
+        a = quantized_path_point(path,t,increment_size)
+        if a != quantized_path[-1]:
+            quantized_path.append(a)
         t += t_inc
-    z = path.point(1)
-    a_exact = svg_coords_to_string_lengths((z.real, z.imag))
-    a = quantize_point(a_exact, increment_size)
-    quantized_path.append(a) 
+    a = quantized_path_point(path, 1.0, increment_size)
+    if a != quantized_path[-1]:
+        quantized_path.append(a)
     return quantized_path
 
 
 
-def quantize_all_paths(filename, step_size=100, mimic_drawbot=False):
+def quantize_all_paths(filename, step_size=100, write_output=False, draw_output=True):
     paths, attributes = svg2paths(filename)
     output = []
     for p in paths:
-        if mimic_drawbot:
-            output.append([string_lengths_to_svg_coords(lengths) for lengths in quantize_path(p, step_size)])
-        else:
-            output.append(quantize_path(p, step_size))
-    outputfile = open("quantized_paths.py", "w")
-    outputfile.write("paths=")
-    outputfile.write(str(output))
-    outputfile.close()
+        output.append(quantize_path(p, step_size))
+        if draw_output:
+            drawbot.trace_path(output[-1])
+
+    if write_output:
+        outputfile = open("quantized_paths.py", "w")
+        outputfile.write("paths=")
+        outputfile.write(str(output))
+        outputfile.close()
         
 
