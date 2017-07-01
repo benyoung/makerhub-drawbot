@@ -7,11 +7,10 @@ def round_to_multiple(x, step_size):
     return step_size * int(floor(float(x)/step_size + 0.5))
 
 # round off coords of p (complex number) to nearest multiple of step size
-# for some reason this ends up upside-down so we're also gonna negate y
 def quantize_point(p, step_size):
     x = round_to_multiple(p.real, step_size)
     y = round_to_multiple(p.imag, step_size)
-    return (x,-y)
+    return (x,y)
 
 def quantize_path(path, step_size, t0=0.0, t1=1.0):
     a_true = path.point(t0)
