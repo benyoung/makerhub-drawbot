@@ -92,15 +92,17 @@ def quantize_path(path, increment_size, oversample = 5):
 
 
 
-def quantize_all_paths(filename, step_size=100, write_output=False, draw_output=True):
+def quantize_all_paths(filename, step_size=100, actually_draw=False):
     paths, attributes = svg2paths(filename)
     output = []
     for p in paths:
-        output.append(quantize_path(p, step_size))
-        if draw_output:
+        if actually_draw:
+            output.append(quantize_path(p, step_size))
             drawbot.trace_path(output[-1])
+        else:
+            output.append([string_lengths_to_svg_coords(pt) for pt in quantize_path(p, step_size)])
 
-    if write_output:
+    if not actually_draw:
         outputfile = open("quantized_paths.py", "w")
         outputfile.write("paths=")
         outputfile.write(str(output))
