@@ -68,10 +68,10 @@ module motor_block() {
 
 
 eyelet_x = 55*mm;
-eyelet_y = 13*mm;
-pin_x = [21*mm, 45*mm, eyelet_x];
+eyelet_y = 8*mm;
+pin_x = [21*mm, 44*mm, eyelet_x];
 pin_y = [48*mm, 30*mm, eyelet_y];
-pin_rad = 0.6*mm;
+pin_rad = 1.0*mm;
 pin_plinth_rad= 5*mm;
 pin_plinth_height=4*mm;
 plate_th=2*mm;
@@ -98,7 +98,10 @@ module motor_mount() {
                     
             color("green")
             linear_extrude(height=plate_th) 
-            polygon(plate_points);
+            intersection(){
+                polygon(plate_points);
+                circle(r=plate_y, $fn=120);
+            }
             translate([width/2 + motor_block_inset, width/2 + tab_width, plate_th-eps])
             motor_block();
             for(i=[0:2]) {
